@@ -26,6 +26,8 @@ spec:
     spec:
       containers:
       - image: marianaperola/projeto-mysql:2.0
+        arg:
+        - "--ignore-db-dir=lost+found"
         name: mysql
         env:
           # Use secret in real usage
@@ -44,19 +46,52 @@ spec:
       - name: local
         hostPath:
           path: /meubanco/
- 
  ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: mysql-service
+  name: mysql-connection
   labels:
     app: mysql
 spec:
   ports:
-    - port: 3306
-      name: http
+  - port: 3306
   selector:
     app: mysql
   clusterIP: none
           
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: php
+  template:
+    metadata:
+      labels:
+        app: php
+    spec:
+      containers:
+      - image: marianaperola/projeto-backend:2.0
+      imagePullPolicy: Always
+      port:
+      - containerPort: 80
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-service
+  labels:
+    app: php
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: php
+  type: LoadBalancer
